@@ -1,18 +1,13 @@
 package com.halil.ozel.xoxgame.presentation.ui
 
-/**
- * Created by halilozel1903 on 22.06.2025.
- */
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.halil.ozel.xoxgame.presentation.viewmodel.GameViewModel
@@ -20,23 +15,55 @@ import com.halil.ozel.xoxgame.domain.model.Player
 
 @Composable
 fun XoxGameScreen(viewModel: GameViewModel) {
-    val board = viewModel.board
-    val winner = viewModel.winner
-    val isDraw = viewModel.isDraw
-    val currentPlayer = viewModel.currentPlayer
+    val uiState = viewModel.uiState
+
+    // Dialog state
+    var showDialog by remember { mutableStateOf(false) }
+
+    // Show dialog if game is over
+    LaunchedEffect(uiState.winner, uiState.isDraw) {
+        if (uiState.winner != null || uiState.isDraw) {
+            showDialog = true
+        }
+    }
+
+    if (showDialog && (uiState.winner != null || uiState.isDraw)) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDialog = false
+                    viewModel.resetGame()
+                }) {
+                    Text("Play Again")
+                }
+            },
+            title = {
+                Text(text = if (uiState.winner != null) "Game Over" else "Draw")
+            },
+            text = {
+                Text(
+                    text = when {
+                        uiState.winner != null -> "Winner: ${uiState.winner.name}\nWould you like to play again?"
+                        uiState.isDraw -> "It's a draw!\nWould you like to play again?"
+                        else -> ""
+                    }
+                )
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFAFAFA)),
+            .background(UiConstants.BoardBackground),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "XOX Game",
+            text = "Tic-Tac-Toe",
             fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF222222)
+            color = UiConstants.TextDark
         )
         Spacer(modifier = Modifier.height(24.dp))
         for (row in 0..2) {
@@ -47,21 +74,24 @@ fun XoxGameScreen(viewModel: GameViewModel) {
                             .size(90.dp)
                             .padding(4.dp)
                             .background(
-                                color = Color(0xFFE0E0E0),
+                                color = UiConstants.CellBackground,
                                 shape = RoundedCornerShape(12.dp)
                             )
                             .clickable(
-                                enabled = (board.cells[row][col] == null && winner == null && !isDraw)
+                                enabled = (uiState.board.cells[row][col] == null && uiState.winner == null && !uiState.isDraw)
                             ) {
                                 viewModel.onCellClicked(row, col)
                             },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = board.cells[row][col]?.name ?: "",
+                            text = uiState.board.cells[row][col]?.name ?: "",
                             fontSize = 36.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (board.cells[row][col] == Player.X) Color(0xFF1976D2) else Color(0xFFD32F2F)
+                            color = when (uiState.board.cells[row][col]) {
+                                Player.X -> UiConstants.TextBlue
+                                Player.O -> UiConstants.TextRed
+                                else -> UiConstants.TextDark
+                            }
                         )
                     }
                 }
@@ -69,27 +99,28 @@ fun XoxGameScreen(viewModel: GameViewModel) {
         }
         Spacer(modifier = Modifier.height(24.dp))
         when {
-            winner != null -> Text(
-                text = "Kazanan: ${winner.name}",
-                color = Color(0xFF43A047),
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Medium
+            uiState.winner != null -> Text(
+                text = "Winner: ${uiState.winner.name}",
+                color = UiConstants.TextGreen,
+                fontSize = 22.sp
             )
-            isDraw -> Text(
-                text = "Berabere!",
-                color = Color(0xFFFB8C00),
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Medium
+            uiState.isDraw -> Text(
+                text = "It's a draw!",
+                color = UiConstants.TextOrange,
+                fontSize = 22.sp
             )
             else -> Text(
-                text = "Sıradaki: ${currentPlayer.name}",
-                color = Color(0xFF616161),
+                text = "Next: ${uiState.currentPlayer.name}",
+                color = UiConstants.TextGray,
                 fontSize = 20.sp
             )
         }
         Spacer(modifier = Modifier.height(20.dp))
-        Button(onClick = { viewModel.resetGame() }) {
-            Text("Yeniden Başlat")
+        Button(
+            onClick = { viewModel.resetGame() },
+            enabled = uiState.isResetEnabled
+        ) {
+            Text("Restart")
         }
     }
 }
