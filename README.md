@@ -1,33 +1,84 @@
-# XoxGame
+# XOX Game
 
-XoxGame is a simple Tic-Tac-Toe application written in **Kotlin** using **Jetpack Compose**. Two players take turns placing X and O markers on a 3x3 board. The application detects wins or draws and allows the game to be restarted.
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/)
+[![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-BOM%202026.08.00-4285F4?logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
+[![AGP](https://img.shields.io/badge/AGP-9.4.0-3DDC84?logo=android&logoColor=white)](https://developer.android.com/build/releases/gradle-plugin)
+[![API](https://img.shields.io/badge/API-26%2B-brightgreen.svg?logo=android)](https://android-arsenal.com/api?level=26)
 
-## Technologies
+A compact Tic-Tac-Toe client for Android. Two players share one device, take turns placing **X** and **O** on a 3×3 board, and the app reports a win, a draw, or the next player.
 
-- **Kotlin** programming language
-- **Jetpack Compose** for UI
-- **MVVM architecture** with `ViewModel`, `UseCase`, and `Repository` layers
-- **Material 3** components
+## Features
 
-## Application Structure
+- Turn-based 3×3 gameplay with occupancy and end-game guards
+- Win detection for rows, columns, and both diagonals
+- Draw detection when the board is full with no winner
+- Restart from the board or from the end-of-game dialog
+- Material 3 theming, including dynamic color on Android 12+
+- Edge-to-edge layout with safe drawing insets
 
-The project follows a clean structure:
+## Tech stack
 
-- `domain` layer holds the core models (`Board`, `Player`) and use cases.
-- `data` layer provides a simple in-memory implementation of `GameRepository`.
-- `presentation` layer contains the Compose UI (`XoxGameScreen`) and the `GameViewModel` responsible for game logic.
-- `di` package exposes use case instances through a lightweight `AppModule` object.
+| Area | Choice |
+| --- | --- |
+| Language | Kotlin 2.4.20 |
+| UI | Jetpack Compose, Material 3 (`compose-bom:2026.08.00`) |
+| Architecture | Clean layers + MVVM (`StateFlow`, `ViewModel`) |
+| DI | Lightweight `AppModule` factory (no Hilt) |
+| Build | AGP 9.4.0, Gradle 9.6.0, JDK 17 |
+| SDK | `minSdk 26`, `targetSdk 36`, `compileSdk 37` |
 
-The entry point `XoxApp` sets up the Compose content and displays the game screen.
+## Architecture
 
-## Screenshots
+```
+app/
+├── data/            In-memory GameRepository implementation
+├── di/              Use case and ViewModel factory wiring
+├── domain/
+│   ├── model/       Board, Player
+│   ├── repository/  GameRepository contract
+│   └── usecase/     GetBoard, MakeMove, ResetGame
+└── presentation/    Compose UI, UI state, GameViewModel
+```
 
-Below are sample screens from the application.
+```mermaid
+flowchart LR
+    UI[XoxGameScreen] --> VM[GameViewModel]
+    VM --> UC[Use cases]
+    UC --> Repo[GameRepository]
+    Repo --> Board[Board rules]
+```
 
-<p align="center">
-  <img src="ss1.png" width="300" alt="Screenshot 1" />
-  <img src="ss2.png" width="300" alt="Screenshot 2" />
-  <img src="ss3.png" width="300" alt="Screenshot 3" />
-  <img src="ss4.png" width="300" alt="Screenshot 4" />
-</p>
+Game rules live on `Board` (winner, draw, occupancy). The ViewModel only maps those facts into `GameUiState`. The repository keeps a single in-memory board for the current session.
 
+## Getting started
+
+### Requirements
+
+- Android Studio with JDK 17
+- Android SDK 37 (compile) and a device or emulator on API 26+
+
+### Run
+
+```bash
+git clone https://github.com/halilozel1903/XOXGame.git
+cd XOXGame
+./gradlew :app:assembleDebug
+```
+
+Install the debug APK from Android Studio (**Run**) or with `./gradlew :app:installDebug`.
+
+### Test
+
+```bash
+./gradlew :app:testDebugUnitTest
+```
+
+## Project notes
+
+- `XoxApp` is the launcher `ComponentActivity`. It applies `XoxGameTheme` and obtains `GameViewModel` through `AppModule.gameViewModelFactory`, so the ViewModel survives configuration changes.
+- Strings are in `app/src/main/res/values/strings.xml`.
+- Unit tests cover board outcomes and repository move/reset behavior.
+
+## License
+
+This project is provided as an open sample for learning Jetpack Compose and layered Android architecture.
