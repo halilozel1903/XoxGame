@@ -2,32 +2,57 @@ package com.halil.ozel.xoxgame.presentation.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.halil.ozel.xoxgame.presentation.viewmodel.GameViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.halil.ozel.xoxgame.R
+import com.halil.ozel.xoxgame.di.AppModule
+import com.halil.ozel.xoxgame.domain.model.Board
 import com.halil.ozel.xoxgame.domain.model.Player
+import com.halil.ozel.xoxgame.presentation.viewmodel.GameViewModel
 
 @Composable
-fun XoxGameScreen(viewModel: GameViewModel) {
-    val uiState = viewModel.uiState
-
-    // Dialog state
+fun XoxGameScreen(
+    viewModel: GameViewModel = viewModel(factory = AppModule.gameViewModelFactory)
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val winner = uiState.winner
     var showDialog by remember { mutableStateOf(false) }
 
-    // Show dialog if game is over
-    LaunchedEffect(uiState.winner, uiState.isDraw) {
-        if (uiState.winner != null || uiState.isDraw) {
+    LaunchedEffect(winner, uiState.isDraw) {
+        if (winner != null || uiState.isDraw) {
             showDialog = true
         }
     }
 
-    if (showDialog && (uiState.winner != null || uiState.isDraw)) {
+    if (showDialog && (winner != null || uiState.isDraw)) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
             confirmButton = {
@@ -35,17 +60,23 @@ fun XoxGameScreen(viewModel: GameViewModel) {
                     showDialog = false
                     viewModel.resetGame()
                 }) {
-                    Text("Play Again")
+                    Text(stringResource(R.string.play_again))
                 }
             },
             title = {
-                Text(text = if (uiState.winner != null) "Game Over" else "Draw")
+                Text(
+                    text = if (winner != null) {
+                        stringResource(R.string.game_over)
+                    } else {
+                        stringResource(R.string.draw_title)
+                    }
+                )
             },
             text = {
                 Text(
                     text = when {
-                        uiState.winner != null -> "Winner: ${uiState.winner.name}\nWould you like to play again?"
-                        uiState.isDraw -> "It's a draw!\nWould you like to play again?"
+                        winner != null -> stringResource(R.string.winner_message, winner.name)
+                        uiState.isDraw -> stringResource(R.string.draw_message)
                         else -> ""
                     }
                 )
@@ -56,19 +87,21 @@ fun XoxGameScreen(viewModel: GameViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(UiConstants.BoardBackground),
+            .background(UiConstants.BoardBackground)
+            .windowInsetsPadding(WindowInsets.safeDrawing),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "Tic-Tac-Toe",
+            text = stringResource(R.string.game_title),
             fontSize = 32.sp,
             color = UiConstants.TextDark
         )
         Spacer(modifier = Modifier.height(24.dp))
-        for (row in 0..2) {
+        for (row in 0 until Board.SIZE) {
             Row {
-                for (col in 0..2) {
+                for (col in 0 until Board.SIZE) {
+                    val occupant = uiState.board.cell(row, col)
                     Box(
                         modifier = Modifier
                             .size(90.dp)
@@ -78,19 +111,19 @@ fun XoxGameScreen(viewModel: GameViewModel) {
                                 shape = RoundedCornerShape(12.dp)
                             )
                             .clickable(
-                                enabled = (uiState.board.cells[row][col] == null && uiState.winner == null && !uiState.isDraw)
+                                enabled = occupant == null && winner == null && !uiState.isDraw
                             ) {
                                 viewModel.onCellClicked(row, col)
                             },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = uiState.board.cells[row][col]?.name ?: "",
+                            text = occupant?.name.orEmpty(),
                             fontSize = 36.sp,
-                            color = when (uiState.board.cells[row][col]) {
+                            color = when (occupant) {
                                 Player.X -> UiConstants.TextBlue
                                 Player.O -> UiConstants.TextRed
-                                else -> UiConstants.TextDark
+                                null -> UiConstants.TextDark
                             }
                         )
                     }
@@ -99,18 +132,18 @@ fun XoxGameScreen(viewModel: GameViewModel) {
         }
         Spacer(modifier = Modifier.height(24.dp))
         when {
-            uiState.winner != null -> Text(
-                text = "Winner: ${uiState.winner.name}",
+            winner != null -> Text(
+                text = stringResource(R.string.winner_status, winner.name),
                 color = UiConstants.TextGreen,
                 fontSize = 22.sp
             )
             uiState.isDraw -> Text(
-                text = "It's a draw!",
+                text = stringResource(R.string.draw_status),
                 color = UiConstants.TextOrange,
                 fontSize = 22.sp
             )
             else -> Text(
-                text = "Next: ${uiState.currentPlayer.name}",
+                text = stringResource(R.string.next_player, uiState.currentPlayer.name),
                 color = UiConstants.TextGray,
                 fontSize = 20.sp
             )
@@ -120,7 +153,7 @@ fun XoxGameScreen(viewModel: GameViewModel) {
             onClick = { viewModel.resetGame() },
             enabled = uiState.isResetEnabled
         ) {
-            Text("Restart")
+            Text(stringResource(R.string.restart))
         }
     }
 }

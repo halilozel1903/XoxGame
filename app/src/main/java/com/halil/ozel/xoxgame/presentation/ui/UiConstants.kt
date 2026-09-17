@@ -1,8 +1,5 @@
 package com.halil.ozel.xoxgame.presentation.ui
 
-/**
- * Created by halilozel1903 on 22.06.2025.
- */
 import androidx.compose.ui.graphics.Color
 
 object UiConstants {

@@ -1,3 +1,13 @@
 <resources>
-    <string name="app_name">XoxGame</string>
+    <string name="app_name">XOX Game</string>
+    <string name="game_title">Tic-Tac-Toe</string>
+    <string name="play_again">Play Again</string>
+    <string name="restart">Restart</string>
+    <string name="game_over">Game Over</string>
+    <string name="draw_title">Draw</string>
+    <string name="winner_message">Winner: %1$s\nWould you like to play again?</string>
+    <string name="draw_message">It\'s a draw!\nWould you like to play again?</string>
+    <string name="winner_status">Winner: %1$s</string>
+    <string name="draw_status">It\'s a draw!</string>
+    <string name="next_player">Next: %1$s</string>
 </resources>
