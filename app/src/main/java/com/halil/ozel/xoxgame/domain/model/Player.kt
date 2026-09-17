@@ -1,6 +1,8 @@
 package com.halil.ozel.xoxgame.domain.model
 
-/**
- * Created by halilozel1903 on 22.06.2025.
- */
-enum class Player { X, O }
+enum class Player {
+    X, O;
+
+    val opponent: Player
+        get() = if (this == X) O else X
+}
